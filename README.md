@@ -113,7 +113,7 @@ User interface components:
 ## File Types Supported
 
 - **CSV files**: Primary data format
-- **Special handling for "alldata.csv"**: Automatic table normalization
+-  Automatic table normalization
 - **Header/No-header support**: Flexible CSV structure handling
 
 ---
