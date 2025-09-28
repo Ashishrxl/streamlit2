@@ -1,0 +1,25 @@
+# Core dependencies
+streamlit
+pandas
+numpy
+
+# Visualization
+plotly
+seaborn
+matplotlib
+
+# Forecasting
+prophet
+
+# Time series analysis
+statsmodels
+
+# AI integration
+google-generativeai
+
+# Excel support
+xlsxwriter
+openpyxl
+
+# Image processing for chart export
+kaleido
