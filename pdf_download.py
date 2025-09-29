@@ -53,7 +53,7 @@ def pdfapp(data: pd.DataFrame):
         st.write("### Filtered DataFrame")
         st.dataframe(filtered_df)
 
-        pdf_buffer = dataframe_to_pdf(filtered_df)
+        pdf_buffer = dataframe_to_pdf(filtered_df.sort_values(by="Item"))
 
         with st.expander("Download PDF"):
             st.download_button(
