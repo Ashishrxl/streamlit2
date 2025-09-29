@@ -7,6 +7,8 @@ import pandas as pd
 from utils import convert_df_to_csv, convert_df_to_excel
 from data_processor import process_alldata_tables, process_regular_tables
 
+from pdf_download import pdfapp
+
 
 def create_sidebar_settings():
     """Create sidebar with application settings."""
@@ -134,6 +136,7 @@ def run_main_application_logic(uploaded_df, is_alldata, forecast_color, forecast
         uploaded_df1 = filter_dataframe(uploaded_df)
         tables_dict = process_alldata_tables(uploaded_df)
         tables_dict["Item-wise"] = uploaded_df1
+        pdfapp(uploaded_df)
     else:
         tables_dict = process_regular_tables(uploaded_df)
     
