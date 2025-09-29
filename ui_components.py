@@ -128,10 +128,12 @@ def run_main_application_logic(uploaded_df, is_alldata, forecast_color, forecast
     from visualizer import create_visualization_section
     from forecaster import create_forecasting_section
     from chat_handler import create_chat_section
-    
+    from filter_df import filter_dataframe
     # Process data into tables
     if is_alldata:
+        uploaded_df1 = filter_dataframe(uploaded_df)
         tables_dict = process_alldata_tables(uploaded_df)
+        tables_dict["Item-wise"] = uploaded_df1
     else:
         tables_dict = process_regular_tables(uploaded_df)
     
