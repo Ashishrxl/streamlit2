@@ -3,7 +3,7 @@ import pandas as pd
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     st.markdown("---")
-    with st.expander("📊 Visualize Data", expanded=False):
+    with st.expander("Make filtered table", expanded=False):
     # Step 1: Let user pick the column for filtering
         item_column = st.selectbox("Select column to filter by:", df.columns)
 
