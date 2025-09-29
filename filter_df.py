@@ -34,7 +34,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     # Step 8: Show results
     st.write("### Filtered Data")
-    st.dataframe(filtered_df)
+    st.dataframe(filtered_df.head())
 
     return filtered_df
 
