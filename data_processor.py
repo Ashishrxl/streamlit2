@@ -81,11 +81,7 @@ def display_tables_preview(tables_dict):
                     st.markdown("", unsafe_allow_html=True)
                     st.dataframe(table_df)
                     st.download_button(
-                        f"⬇️ Download {table_name} (PDF)",
-                        data=pdfapp(table_df),
-                        file_name=f"{table_name.lower().replace(' ', '')}.pdf",
-                        mime="application/pdf",
-                    )   
+                        pdfapp(table_df)
                     st.download_button(
                         f"⬇️ Download {table_name} (CSV)",
                         data=convert_df_to_csv(table_df),
