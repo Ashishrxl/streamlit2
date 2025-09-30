@@ -80,25 +80,25 @@ def display_tables_preview(tables_dict):
                 with st.expander(f"📖 Show full {table_name} Table"):
                     st.markdown("", unsafe_allow_html=True)
                     st.dataframe(table_df)
-                 st.download_button(
-                    f"⬇️ Download {table_name} (PDF)",
-                    data=convert_df_to_pdf(table_df),
-                    file_name=f"{table_name.lower().replace(' ', '')}.pdf",
-                    mime="application/pdf",
-                )   
-                st.download_button(
-                    f"⬇️ Download {table_name} (CSV)",
-                    data=convert_df_to_csv(table_df),
-                    file_name=f"{table_name.lower().replace(' ', '')}.csv",
-                    mime="text/csv",
-                )
+                    st.download_button(
+                        f"⬇️ Download {table_name} (PDF)",
+                        data=convert_df_to_pdf(table_df),
+                        file_name=f"{table_name.lower().replace(' ', '')}.pdf",
+                        mime="application/pdf",
+                    )   
+                    st.download_button(
+                        f"⬇️ Download {table_name} (CSV)",
+                        data=convert_df_to_csv(table_df),
+                        file_name=f"{table_name.lower().replace(' ', '')}.csv",
+                        mime="text/csv",
+                    )
                 
-                st.download_button(
-                    f"⬇️ Download {table_name} (Excel)",
-                    data=convert_df_to_excel(table_df),
-                    file_name=f"{table_name.lower().replace(' ', '')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
+                    st.download_button(
+                        f"⬇️ Download {table_name} (Excel)",
+                        data=convert_df_to_excel(table_df),
+                        file_name=f"{table_name.lower().replace(' ', '')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
             else:
                 st.info("ℹ️ Not available from the uploaded CSV.")
 
