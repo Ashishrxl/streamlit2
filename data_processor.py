@@ -4,8 +4,8 @@ Data processing and table generation functionality.
 
 import pandas as pd
 import streamlit as st
-from utils import find_col_ci, convert_df_to_csv, convert_df_to_excel, toggle_state, convert_df_to_pdf
-
+from utils import find_col_ci, convert_df_to_csv, convert_df_to_excel, toggle_state
+from pdf_download import pdfapp
 
 def process_alldata_tables(uploaded_df):
     """Process uploaded CSV into normalized tables for alldata.csv structure."""
@@ -82,7 +82,7 @@ def display_tables_preview(tables_dict):
                     st.dataframe(table_df)
                     st.download_button(
                         f"⬇️ Download {table_name} (PDF)",
-                        data=convert_df_to_pdf(table_df),
+                        data=pdfapp(table_df),
                         file_name=f"{table_name.lower().replace(' ', '')}.pdf",
                         mime="application/pdf",
                     )   
