@@ -6,6 +6,12 @@ import pandas as pd
 import io
 import streamlit as st
 import plotly.io as pio
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+
+
 
 
 
@@ -51,6 +57,47 @@ def export_matplotlib_fig(fig):
 def toggle_state(key):
     """Toggle boolean state in Streamlit session state."""
     st.session_state[key] = not st.session_state[key]
+
+
+
+
+def convert_df_to_pdf(df: pd.DataFrame) -> bytes:
+    """Convert a Pandas DataFrame to PDF and return as bytes."""
+    buffer = io.BytesIO()
+
+    # Setup PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+    elements = []
+    style = getSampleStyleSheet()
+
+    # Title
+    elements.append(Paragraph("Table Export", style['Heading1']))
+
+    # Convert DataFrame to list of lists for ReportLab Table
+    data = [df.columns.tolist()] + df.astype(str).values.tolist()
+
+    # Create Table
+    table = Table(data, repeatRows=1)
+
+    # Styling
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    pdf = buffer.getvalue()
+    buffer.close()
+    return pdf
+
+
 
 
 
