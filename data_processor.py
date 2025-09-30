@@ -62,7 +62,7 @@ def process_regular_tables(uploaded_df):
 
 def display_tables_preview(tables_dict):
     with st.expander("Tables Preview"):
-    """Display expandable preview of all tables."""
+    
    # st.subheader("🗂️ Tables Preview")
     
     
