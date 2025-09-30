@@ -48,12 +48,13 @@ def pdfapp(data: pd.DataFrame):
     selected_name = st.selectbox("Choose a Name", names)
 
     if selected_name:
-        filtered_df = data.loc[data["Name"] == selected_name, ["Item"]]
+        df = data.loc[data["Name"] == selected_name, ["Item"]]
+        filtered_df = df.drop_duplicates().sort_values(by="Item").reset_index(drop=True)
 
         st.write("### Filtered DataFrame")
         st.dataframe(filtered_df)
 
-        pdf_buffer = dataframe_to_pdf(filtered_df.sort_values(by="Item").drop_duplicates().reset_index(drop= True))
+        pdf_buffer = dataframe_to_pdf(filtered_df)
 
         with st.expander("Download PDF"):
             st.download_button(
