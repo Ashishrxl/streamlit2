@@ -80,8 +80,7 @@ def display_tables_preview(tables_dict):
                 with st.expander(f"📖 Show full {table_name} Table"):
                     st.markdown("", unsafe_allow_html=True)
                     st.dataframe(table_df)
-                    st.download_button(
-                        pdfapp(table_df)
+                    pdfapp(table_df)
                     st.download_button(
                         f"⬇️ Download {table_name} (CSV)",
                         data=convert_df_to_csv(table_df),
