@@ -4,7 +4,7 @@ Data processing and table generation functionality.
 
 import pandas as pd
 import streamlit as st
-from utils import find_col_ci, convert_df_to_csv, convert_df_to_excel, toggle_state
+from utils import find_col_ci, convert_df_to_csv, convert_df_to_excel, toggle_state, convert_df_to_pdf
 from pdf_download import pdfapp
 
 def process_alldata_tables(uploaded_df):
@@ -80,7 +80,12 @@ def display_tables_preview(tables_dict):
                 with st.expander(f"📖 Show full {table_name} Table"):
                     st.markdown("", unsafe_allow_html=True)
                     st.dataframe(table_df)
-                    pdfapp(table_df)
+                    st.download_button(
+                        f"⬇️ Download {table_name} (PDF)",
+                        data=convert_df_to_pdf(table_df),
+                        file_name=f"{table_name.lower().replace(' ', '')}.pdf",
+                        mime="application/pdf",
+                        )
                     st.download_button(
                         f"⬇️ Download {table_name} (CSV)",
                         data=convert_df_to_csv(table_df),
