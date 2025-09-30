@@ -62,7 +62,7 @@ def process_regular_tables(uploaded_df):
 
 def display_tables_preview(tables_dict):
     """Display expandable preview of all tables."""
-    st.subheader("🗂️ Tables Preview")
+   # st.subheader("🗂️ Tables Preview")
     
     for table_name, table_df in tables_dict.items():
         state_key = f"expand_{table_name.replace(' ', '')}"
