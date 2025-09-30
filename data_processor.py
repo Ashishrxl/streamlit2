@@ -61,46 +61,48 @@ def process_regular_tables(uploaded_df):
 
 
 def display_tables_preview(tables_dict):
+    with st.expander("Tables Preview"):
     """Display expandable preview of all tables."""
    # st.subheader("🗂️ Tables Preview")
     
-    for table_name, table_df in tables_dict.items():
-        state_key = f"expand_{table_name.replace(' ', '')}"
-        if state_key not in st.session_state:
-            st.session_state[state_key] = False
+    
+        for table_name, table_df in tables_dict.items():
+            state_key = f"expand_{table_name.replace(' ', '')}"
+            if state_key not in st.session_state:
+                st.session_state[state_key] = False
 
-        btn_label = f"Minimise {table_name} Table" if st.session_state[state_key] else f"Expand {table_name} Table"
-        st.button(btn_label, key=f"btn{table_name}", on_click=toggle_state, args=(state_key,))
+            btn_label = f"Minimise {table_name} Table" if st.session_state[state_key] else f"Expand {table_name} Table"
+            st.button(btn_label, key=f"btn{table_name}", on_click=toggle_state, args=(state_key,))
 
-        if st.session_state[state_key]:
-            st.write(f"### {table_name} Table (First 20 Rows)")
-            if not table_df.empty:
-                st.dataframe(table_df.head(20))
+            if st.session_state[state_key]:
+                st.write(f"### {table_name} Table (First 20 Rows)")
+                if not table_df.empty:
+                    st.dataframe(table_df.head(20))
                 
-                with st.expander(f"📖 Show full {table_name} Table"):
-                    st.markdown("", unsafe_allow_html=True)
-                    st.dataframe(table_df)
-                    st.download_button(
-                        f"⬇️ Download {table_name} (PDF)",
-                        data=convert_df_to_pdf(table_df),
-                        file_name=f"{table_name.lower().replace(' ', '')}.pdf",
-                        mime="application/pdf",
+                    with st.expander(f"📖 Show full {table_name} Table"):
+                        st.markdown("", unsafe_allow_html=True)
+                        st.dataframe(table_df)
+                        st.download_button(
+                            f"⬇️ Download {table_name} (PDF)",
+                            data=convert_df_to_pdf(table_df),
+                            file_name=f"{table_name.lower().replace(' ', '')}.pdf",
+                            mime="application/pdf",
+                            )
+                        st.download_button(
+                            f"⬇️ Download {table_name} (CSV)",
+                            data=convert_df_to_csv(table_df),
+                            file_name=f"{table_name.lower().replace(' ', '')}.csv",
+                            mime="text/csv",
                         )
-                    st.download_button(
-                        f"⬇️ Download {table_name} (CSV)",
-                        data=convert_df_to_csv(table_df),
-                        file_name=f"{table_name.lower().replace(' ', '')}.csv",
-                        mime="text/csv",
-                    )
                 
-                    st.download_button(
-                        f"⬇️ Download {table_name} (Excel)",
-                        data=convert_df_to_excel(table_df),
-                        file_name=f"{table_name.lower().replace(' ', '')}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    )
-            else:
-                st.info("ℹ️ Not available from the uploaded CSV.")
+                        st.download_button(
+                            f"⬇️ Download {table_name} (Excel)",
+                            data=convert_df_to_excel(table_df),
+                            file_name=f"{table_name.lower().replace(' ', '')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        )
+                else:
+                    st.info("ℹ️ Not available from the uploaded CSV.")
 
 
 def aggregate_data_by_time(selected_df, date_col_sel, time_period, grouping_choice, name_col_sel, categorical_cols, numerical_cols):
