@@ -35,7 +35,7 @@ def dataframe_to_pdf(df: pd.DataFrame) -> BytesIO:
 def pdfapp(data: pd.DataFrame):
     """Streamlit app to filter dataframe by Name and download Item column as PDF."""
 
-    st.title("Filtered Data PDF Exporter")
+    
 
     # Ensure 'Name' column exists
     if "Name" not in data.columns or "Item" not in data.columns:
