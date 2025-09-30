@@ -1,5 +1,5 @@
 """
-Data processing and table generation functionality.
+Data processing and table generationy functionality.
 """
 
 import pandas as pd
