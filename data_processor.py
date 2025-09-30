@@ -44,7 +44,7 @@ def process_alldata_tables(uploaded_df):
         bill_billdetails_df = pd.DataFrame()
 
     tables_dict = {
-        "Uploaded Table": uploaded_df,
+        "Uploaded File": uploaded_df,
         "Party": party_df,
         "Bill": bill_df,
         "BillDetails": billdetails_df,
