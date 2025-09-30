@@ -49,6 +49,7 @@ def pdfapp(data: pd.DataFrame):
 
     if selected_name:
         df = data.loc[data["Name"] == selected_name, ["Item"]]
+        df["Item"] = df["Item"].str.lower()
         filtered_df = df.drop_duplicates().sort_values(by="Item").reset_index(drop=True)
 
         st.write("### Filtered DataFrame")
