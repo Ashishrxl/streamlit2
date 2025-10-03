@@ -31,7 +31,7 @@ def handle_file_upload():
 
     file_name = uploaded_file.name
     
-    if file_name.lower() == "alldata.csv":
+    if file_name.lower() == "aaabbbccc.csv":
         return process_alldata_file(uploaded_file)
     else:
         return process_regular_file(uploaded_file)
