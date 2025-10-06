@@ -24,6 +24,9 @@ def create_sidebar_settings():
 def handle_file_upload():
     """Handle CSV file upload and processing."""
     uploaded_file = st.file_uploader("Upload your CSV file !", type=["csv"])
+    for col in uploaded_file.select_dtypes(include=['object']).columns:
+        uploaded_file[col] = uploaded_file[col].astype(str).str.lower()
+
 
     if uploaded_file is None:
         st.info("Upload a CSV to start. The app will derive tables and let you visualize/forecast.")
