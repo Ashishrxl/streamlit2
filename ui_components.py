@@ -42,6 +42,9 @@ def process_alldata_file(uploaded_file):
     """Process alldata.csv file."""
     try:
         uploaded_df = pd.read_csv(uploaded_file, low_memory=False)
+        for col in uploaded_df.select_dtypes(include=['object']).columns:
+        uploaded_df[col] = uploaded_df[col].astype(str).str.lower()
+
         st.success("✅ File uploaded successfully!")
         return uploaded_df, True  # is_alldata=True
     except Exception as e:
