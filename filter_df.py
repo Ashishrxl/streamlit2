@@ -8,7 +8,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         item_column = st.selectbox("Select column to filter by:", df.columns)
 
     # Step 2: Create distinct list of items
-        distinct_items = df[item_column].dropna().unique().tolist()
+        distinct_items = df[item_column].str.lower().dropna().unique().tolist()
 
     # Step 3: User types a keyword for filtering items
         keyword = st.text_input(f"Search in '{item_column}':", "")
