@@ -6,9 +6,11 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     with st.expander("Make Item wise table", expanded=False):
     # Step 1: Let user pick the column for filtering
         item_column = st.selectbox("Select column to filter by:", df.columns)
+        if df[item_column].dropna().apply(lambda x: isinstance(x, str)).all():
+            df[item_column] = df[item_column].str.lower()
 
     # Step 2: Create distinct list of items
-        distinct_items = df[item_column].str.lower().dropna().unique().tolist()
+        distinct_items = df[item_column].dropna().unique().tolist()
 
     # Step 3: User types a keyword for filtering items
         keyword = st.text_input(f"Search in '{item_column}':", "")
