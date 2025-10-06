@@ -11,19 +11,7 @@ A comprehensive Streamlit application for CSV data analysis, visualization, and 
 - **📋 Table Processing**: Automatic table derivation and data processing
 - **💾 Export Options**: Download data and visualizations in various formats
 
-## Project Structure
 
-├── main.py                 # Main application entry point
-├── config.py              # Configuration and imports
-├── utils.py               # Utility functions
-├── data_processor.py      # Data processing and table generation
-├── visualizer.py          # Visualization functionality
-├── forecaster.py          # Forecasting using Prophet
-├── chat_handler.py        # AI chat functionality
-├── ui_components.py       # UI components and interface
-├── requirements.txt       # Project dependencies
-└── README.md             # This file
----
 
 ## Installation
 
