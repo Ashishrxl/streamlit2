@@ -1,5 +1,5 @@
 """
-Modern CSV Visualizer with Forecasting — Gradient Card Design
+CSV Visualizer & Forecasting — Pastel Light Theme
 """
 
 import streamlit as st
@@ -7,8 +7,7 @@ from config import configure_streamlit, configure_gemini_api
 from ui_components import (
     create_sidebar_settings, 
     handle_file_upload, 
-    run_main_application_logic,
-    display_welcome_message
+    run_main_application_logic
 )
 from streamlit.components.v1 import html
 
@@ -25,23 +24,23 @@ try {
 # --- Page Configuration ---
 st.set_page_config(page_title="CSV Visualizer & Forecasting", page_icon="📊", layout="centered")
 
-# --- Custom Modern CSS ---
+# --- Modern Pastel Theme CSS ---
 page_style = """
 <style>
 body, .stApp {
-    background: linear-gradient(180deg, #061C36, #0A2A43, #113A5D);
+    background: linear-gradient(180deg, #f3f9ff, #fdfcff);
     font-family: 'Poppins', sans-serif;
-    color: #F5F7FA;
+    color: #1a1a1a;
 }
 
-/* --- Page Title --- */
+/* --- Title --- */
 .main-title {
     text-align: center;
     font-size: 2.6rem;
     font-weight: 800;
-    margin-top: 1rem;
-    margin-bottom: 0.4rem;
-    background: linear-gradient(90deg, #00C9FF, #92FE9D);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(90deg, #007BFF, #00C6A2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -50,66 +49,68 @@ body, .stApp {
 .subtitle {
     text-align: center;
     font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    opacity: 0.9;
     margin-bottom: 2rem;
 }
 
-/* --- Gradient Card Container --- */
+/* --- Card Container --- */
 .card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.12));
+    background: rgba(255, 255, 255, 0.7);
     border-radius: 25px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
     padding: 2rem;
     margin: 1.5rem auto;
     width: 90%;
     max-width: 700px;
     text-align: center;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.6);
     transition: transform 0.25s ease, box-shadow 0.3s ease;
 }
 .card:hover {
-    transform: scale(1.03);
-    box-shadow: 0 10px 35px rgba(0,0,0,0.4);
+    transform: scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
 
-/* --- Gradient Header for Each Section --- */
+/* --- Card Headers with Pastel Gradients --- */
 .card-header {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #fff;
-    background: linear-gradient(90deg, #36D1DC, #5B86E5);
+    color: white;
     border-radius: 14px;
     padding: 0.8rem 1rem;
     display: inline-block;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-.card-header.upload { background: linear-gradient(90deg, #F7971E, #FFD200); }
-.card-header.forecast { background: linear-gradient(90deg, #8E2DE2, #4A00E0); }
-.card-header.settings { background: linear-gradient(90deg, #00DBDE, #FC00FF); }
+.card-header.forecast { background: linear-gradient(90deg, #a18cd1, #fbc2eb); }
+.card-header.analysis { background: linear-gradient(90deg, #89f7fe, #66a6ff); }
+.card-header.results { background: linear-gradient(90deg, #ffecd2, #fcb69f); }
 
 /* --- Paragraphs --- */
 .card p {
     font-size: 1rem;
-    color: rgba(255,255,255,0.95);
+    color: #222;
+    line-height: 1.6;
     margin-bottom: 1.5rem;
 }
 
 /* --- File Upload Box --- */
 [data-testid="stFileUploaderDropzone"] {
-    border: 2px dashed rgba(255,255,255,0.4);
-    background: rgba(255,255,255,0.06);
+    border: 2px dashed rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.9);
     border-radius: 15px;
     transition: all 0.3s ease;
-    color: #fff !important;
+    color: #333 !important;
 }
 [data-testid="stFileUploaderDropzone"]:hover {
-    border-color: #00C9FF;
-    background: rgba(255,255,255,0.15);
-    box-shadow: 0 0 15px rgba(0,201,255,0.8);
+    border-color: #66a6ff;
+    background: rgba(255,255,255,1);
+    box-shadow: 0 0 12px rgba(102,166,255,0.3);
 }
 [data-testid="stFileUploaderDropzone"] * {
-    color: #f0f0f0 !important;
+    color: #333 !important;
 }
 
 /* --- Buttons --- */
@@ -121,13 +122,14 @@ body, .stApp {
     border-radius: 10px;
     padding: 0.6rem 1.2rem;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(91,134,229,0.3);
 }
 .stButton > button:hover {
     transform: scale(1.05);
     background: linear-gradient(90deg, #5B86E5, #36D1DC);
 }
 
-/* --- Hide Streamlit Default Elements --- */
+/* --- Hide Streamlit Defaults --- */
 #MainMenu, footer, header, [data-testid="stToolbar"], [data-testid="stStatusWidget"] {
     display: none !important;
 }
@@ -135,46 +137,35 @@ body, .stApp {
 """
 st.markdown(page_style, unsafe_allow_html=True)
 
-# --- App Content ---
+# --- App Logic ---
 def main():
-    """Main modern application layout."""
+    """Main app function with pastel light-themed UI."""
     configure_streamlit()
     gemini_model = configure_gemini_api()
 
-    # Title and subtitle
-    st.markdown("<h1 class='main-title'>🌐 CSV Visualizer & Forecasting</h1>", unsafe_allow_html=True)
+    # --- Title and subtitle ---
+    st.markdown("<h1 class='main-title'>📊 CSV Visualizer & Forecasting</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Upload your dataset, visualize insights, and forecast trends with AI precision.</p>", unsafe_allow_html=True)
 
-    # Sidebar Settings
+    # Sidebar settings
     forecast_color, forecast_opacity, show_confidence = create_sidebar_settings()
 
-    # Welcome Card
-    st.markdown("""
-    <div class="card">
-        <div class="card-header settings">⚙️ Welcome</div>
-        <p>Start by uploading your CSV file below. Configure your chart and forecast settings easily in the sidebar.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    display_welcome_message()
-
-    # Upload Card
-    st.markdown("""
-    <div class="card">
-        <div class="card-header upload">📤 Upload CSV File</div>
-        <p>Upload your CSV file to start visualizing data and generating forecasts.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # --- File Upload Section (simple, no card) ---
     file_result = handle_file_upload()
 
-    # Forecast Card (if file uploaded)
+    # --- Show main forecasting card only after upload ---
     if file_result[0] is not None:
         uploaded_df, is_alldata = file_result
+
+        # Forecast Card
         st.markdown("""
         <div class="card">
             <div class="card-header forecast">📈 Forecast & Analyze</div>
-            <p>View insights, visualize trends, and explore AI-powered forecasting results.</p>
+            <p>Explore AI-powered forecasting, detect trends, and generate predictive visualizations directly from your dataset.</p>
         </div>
         """, unsafe_allow_html=True)
+
+        # Run main logic
         run_main_application_logic(
             uploaded_df, 
             is_alldata, 
