@@ -3,7 +3,6 @@ Main application entry point for CSV Visualizer with Forecasting.
 """
 
 import streamlit as st
-from streamlit.components.v1 import html
 from config import configure_streamlit, configure_gemini_api
 from ui_components import (
     create_sidebar_settings, 
@@ -12,42 +11,26 @@ from ui_components import (
     display_welcome_message
 )
 
-# ---- Page Config ----
-st.set_page_config(
-    page_title="CSV Visualizer & Forecasting",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+from streamlit.components.v1 import html
 
-# ---- Hide Streamlit Branding ----
-hide_ui = """
-<style>
-#MainMenu, footer, header {visibility: hidden;}
-[data-testid="stToolbar"], [data-testid="stStatusWidget"] {display: none !important;}
-a[href^="https://github.com"], a[href^="https://streamlit.io"] {display: none !important;}
-</style>
-"""
-st.markdown(hide_ui, unsafe_allow_html=True)
-
-# ---- Inject Custom JS to Hide Branding in Parent Frame ----
+# --- Hide Streamlit Branding ---
 html(
-  """
-  <script>
-  try {
-    const sel = window.top.document.querySelectorAll('[href*="streamlit.io"], [href*="streamlit.app"]');
-    sel.forEach(e => e.style.display='none');
-  } catch(e) { console.warn('parent DOM not reachable', e); }
-  </script>
-  """,
-  height=0
+    """
+    <script>
+    try {
+        const sel = window.top.document.querySelectorAll('[href*="streamlit.io"], [href*="streamlit.app"]');
+        sel.forEach(e => e.style.display='none');
+    } catch(e) { console.warn('parent DOM not reachable', e); }
+    </script>
+    """,
+    height=0
 )
 
-# ---- Modern Animated Background + CSS ----
+# --- CSS for Full Modern UI ---
 page_css = """
 <style>
 body, .stApp {
-    background: radial-gradient(circle at top left, #1e3c72, #2a5298);
+    background: radial-gradient(circle at top left, #16213e, #1a2a6c);
     font-family: 'Poppins', sans-serif;
     color: #ffffff;
     overflow-x: hidden;
@@ -56,31 +39,32 @@ body, .stApp {
 /* Title */
 .main-title {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 2.4rem;
     font-weight: 800;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
     background: linear-gradient(90deg, #00c6ff, #0072ff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-/* Subtext */
+/* Subtitle */
 .subtitle {
     text-align: center;
     font-size: 1.1rem;
-    color: rgba(255,255,255,0.8);
+    color: rgba(255,255,255,0.85);
     margin-bottom: 2rem;
 }
 
-/* Upload & Content Containers */
+/* Upload & Forecast Panels */
 .upload-section, .forecast-section {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.12);
     border-radius: 18px;
-    padding: 1.5rem;
-    margin: 1rem auto;
+    padding: 1.8rem;
+    margin: 2rem auto;
     width: 95%;
     max-width: 1200px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35);
     backdrop-filter: blur(12px);
     transform: translateY(40px);
     opacity: 0;
@@ -91,7 +75,7 @@ body, .stApp {
     opacity: 1;
 }
 
-/* Sidebar Customization */
+/* Sidebar Styling */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #283e51, #485563);
     color: white;
@@ -100,7 +84,7 @@ body, .stApp {
     color: white !important;
 }
 
-/* Button Enhancements */
+/* Buttons */
 .stButton > button {
     background: linear-gradient(90deg, #36d1dc, #5b86e5);
     border: none;
@@ -116,23 +100,46 @@ body, .stApp {
     background: linear-gradient(90deg, #5b86e5, #36d1dc);
 }
 
-/* Chart & DataFrame Styling */
-[data-testid="stDataFrame"] {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+/* File Upload Widget */
+[data-testid="stFileUploaderDropzone"] {
+    border: 2px dashed rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.07);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: #36d1dc;
+    box-shadow: 0 0 15px #36d1dc;
+    background: rgba(255,255,255,0.15);
+    animation: pulseGlow 1.5s infinite;
 }
 
-/* Animations */
+/* Glow Pulse Animation */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0px rgba(54,209,220,0.3); }
+  50% { box-shadow: 0 0 15px rgba(54,209,220,0.8); }
+  100% { box-shadow: 0 0 0px rgba(54,209,220,0.3); }
+}
+
+/* Fade-in Animation */
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(40px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile Responsive */
+/* Mobile View */
 @media (max-width: 600px) {
-    .main-title { font-size: 2rem; }
-    .subtitle { font-size: 1rem; }
+    .main-title { font-size: 1.8rem; }
+    .subtitle { font-size: 0.95rem; }
+    .upload-section, .forecast-section { padding: 1rem; margin: 1rem; }
+}
+
+/* Hide Streamlit Branding */
+#MainMenu, footer, header, [data-testid="stToolbar"], [data-testid="stStatusWidget"], [data-testid="stActionButton"] {
+    display: none !important;
+}
+a[href^="https://github.com"], a[href^="https://streamlit.io"] {
+    display: none !important;
 }
 </style>
 
@@ -153,34 +160,33 @@ document.addEventListener("DOMContentLoaded", function() {
 st.markdown(page_css, unsafe_allow_html=True)
 
 
-# ---- MAIN FUNCTION ----
+# --- Main Application ---
 def main():
     """Main application function."""
-    
-    # Configure Streamlit and initialize AI
     configure_streamlit()
     gemini_model = configure_gemini_api()
 
-    # Title + Intro
-    st.markdown('<h1 class="main-title">📊 CSV Visualizer & Forecasting</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Upload your dataset, visualize trends, and forecast with AI-powered precision.</p>', unsafe_allow_html=True)
+    # Header
+    st.markdown("<h1 class='main-title'>📈 CSV Visualizer & Forecasting</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Upload your dataset, visualize trends, and forecast with AI-powered precision.</p>", unsafe_allow_html=True)
 
-    # Sidebar settings
+    # Sidebar
     forecast_color, forecast_opacity, show_confidence = create_sidebar_settings()
 
-    # Welcome message
+    # Welcome Message
     display_welcome_message()
 
-    # File Upload Section
-    st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-    file_result = handle_file_upload()
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Upload Section
+    with st.container():
+        st.markdown("<div class='upload-section visible'>", unsafe_allow_html=True)
+        st.subheader("📤 Upload your CSV file")
+        file_result = handle_file_upload()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # Run forecasting logic if file uploaded
+    # If file uploaded, run logic
     if file_result[0] is not None:
         uploaded_df, is_alldata = file_result
-        st.markdown('<div class="forecast-section">', unsafe_allow_html=True)
-
+        st.markdown("<div class='forecast-section visible'>", unsafe_allow_html=True)
         run_main_application_logic(
             uploaded_df, 
             is_alldata, 
@@ -189,9 +195,8 @@ def main():
             show_confidence,
             gemini_model
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ---- Run App ----
 if __name__ == "__main__":
     main()
