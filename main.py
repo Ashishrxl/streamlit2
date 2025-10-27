@@ -143,10 +143,7 @@ def main():
     configure_streamlit()
     gemini_model = configure_gemini_api()
 
-    # --- Title and subtitle ---
-    st.markdown("<h1 class='main-title'>📊 CSV Visualizer & Forecasting</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Upload your dataset, visualize insights, and forecast trends with AI precision.</p>", unsafe_allow_html=True)
-
+    
     # Sidebar settings
     forecast_color, forecast_opacity, show_confidence = create_sidebar_settings()
 
