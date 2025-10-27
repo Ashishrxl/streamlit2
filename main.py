@@ -10,69 +10,67 @@ from ui_components import (
     run_main_application_logic,
     display_welcome_message
 )
-
 from streamlit.components.v1 import html
 
 # --- Hide Streamlit Branding ---
-html(
-    """
-    <script>
-    try {
-        const sel = window.top.document.querySelectorAll('[href*="streamlit.io"], [href*="streamlit.app"]');
-        sel.forEach(e => e.style.display='none');
-    } catch(e) { console.warn('parent DOM not reachable', e); }
-    </script>
-    """,
-    height=0
-)
+html("""
+<script>
+try {
+    const sel = window.top.document.querySelectorAll('[href*="streamlit.io"], [href*="streamlit.app"]');
+    sel.forEach(e => e.style.display='none');
+} catch(e) { console.warn('parent DOM not reachable', e); }
+</script>
+""", height=0)
 
-# --- Modern, clean, glassmorphic CSS ---
+# --- Modern, high-contrast, glassmorphic CSS ---
 page_css = """
 <style>
 body, .stApp {
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background: linear-gradient(135deg, #0d1b2a, #1b263b, #2a4d69);
     font-family: 'Poppins', sans-serif;
-    color: #ffffff;
+    color: #f5f7fa;
     overflow-x: hidden;
 }
 
 /* --- Page Title --- */
 .main-title {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 2.7rem;
     font-weight: 800;
-    margin-top: 1.2rem;
-    margin-bottom: 0.3rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.4rem;
     background: linear-gradient(90deg, #00c9ff, #92fe9d);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* --- Subtitle --- */
 .subtitle {
     text-align: center;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.85);
-    margin-bottom: 2.2rem;
+    color: rgba(255, 255, 255, 0.92);
+    margin-bottom: 2rem;
 }
 
 /* --- Section Container --- */
 .section {
-    background: rgba(255,255,255,0.12);
-    border-radius: 16px;
-    padding: 2rem;
-    margin: 1.5rem auto;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 18px;
+    padding: 2.2rem;
+    margin: 1.7rem auto;
     width: 95%;
     max-width: 950px;
-    box-shadow: 0 4px 25px rgba(0,0,0,0.25);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     animation: fadeIn 0.8s ease forwards;
 }
 
 /* --- Section Header --- */
 .section h3 {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
     background: linear-gradient(90deg, #00dbde, #fc00ff);
     -webkit-background-clip: text;
@@ -81,21 +79,26 @@ body, .stApp {
     display: flex;
     align-items: center;
     gap: 8px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* --- Upload Box Styling --- */
 [data-testid="stFileUploaderDropzone"] {
-    border: 2px dashed rgba(255,255,255,0.45);
-    background: rgba(255,255,255,0.05);
+    border: 2px dashed rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.08);
     border-radius: 15px;
-    padding: 1rem;
+    padding: 1.2rem;
     transition: all 0.3s ease;
+    color: #ffffff;
 }
 [data-testid="stFileUploaderDropzone"]:hover {
     border-color: #00dbde;
-    box-shadow: 0 0 15px #00dbde;
-    background: rgba(255,255,255,0.12);
+    box-shadow: 0 0 18px #00dbde;
+    background: rgba(255,255,255,0.15);
     animation: pulseGlow 1.6s infinite;
+}
+[data-testid="stFileUploaderDropzone"] * {
+    color: #f0f0f0 !important;
 }
 
 /* --- Buttons --- */
@@ -105,22 +108,32 @@ body, .stApp {
     color: white;
     font-weight: 600;
     border-radius: 12px;
-    padding: 0.6rem 1.2rem;
+    padding: 0.6rem 1.3rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .stButton > button:hover {
     transform: scale(1.05);
     background: linear-gradient(90deg, #5b86e5, #36d1dc);
 }
 
+/* --- Text Contrast Enhancements --- */
+p, label, span, small, div, .stText {
+    color: #f0f4f8 !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+h1, h2, h3, h4 {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
 /* --- Sidebar --- */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #243b55, #141e30);
+    background: linear-gradient(180deg, #1e2a47, #0d1b2a);
     color: white;
 }
 [data-testid="stSidebar"] * {
-    color: white !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
 }
 
 /* --- Animations --- */
@@ -130,15 +143,15 @@ body, .stApp {
 }
 @keyframes pulseGlow {
   0% { box-shadow: 0 0 0 rgba(0,219,222,0.3); }
-  50% { box-shadow: 0 0 18px rgba(0,219,222,0.8); }
+  50% { box-shadow: 0 0 18px rgba(0,219,222,0.9); }
   100% { box-shadow: 0 0 0 rgba(0,219,222,0.3); }
 }
 
 /* --- Mobile View --- */
 @media (max-width: 600px) {
-    .main-title { font-size: 1.9rem; }
-    .subtitle { font-size: 1rem; margin-bottom: 1.5rem; }
-    .section { padding: 1.3rem; margin: 1rem; }
+    .main-title { font-size: 2.1rem; }
+    .subtitle { font-size: 1rem; margin-bottom: 1.6rem; }
+    .section { padding: 1.4rem; margin: 1rem; }
     h3 { font-size: 1.15rem; }
 }
 
