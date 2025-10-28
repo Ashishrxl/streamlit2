@@ -1,7 +1,7 @@
 """
 Chat with CSV functionality using Gemini AI.
 """
-
+import datetime
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -219,11 +219,12 @@ def execute_safe_code(code_block, selected_df_chat):
     st.info("✅ Code passed safety checks. Executing in a restricted environment...")
 
     # Prepare restricted environment
-    safe_builtins = {
-        "len": len, "range": range, "min": min, "max": max, "sum": sum, "abs": abs, 
-        "round": round, "sorted": sorted, "str": str, "int": int, "float": float, 
-        "dict": dict, "list": list
-    }
+   # safe_builtins = {
+        "len": len, "range": range, "min": min, "max": max, "sum": sum, "abs": abs, "round": round, "sorted": sorted, "str": str, "int": int, "float": float, "dict": dict, "list": list }
+
+
+
+    safe_builtins = {"bool": bool, "int": int, "float": float, "str": str, "list": list, "dict": dict, "set": set, "tuple": tuple, "range": range, "enumerate": enumerate, "zip": zip, "len": len, "sorted": sorted, "reversed": reversed, "all": all, "any": any, "map": map, "filter": filter, "abs": abs, "min": min, "max": max, "sum": sum, "round": round, "pow": pow, "divmod": divmod, "isinstance": isinstance, "issubclass": issubclass, "type": type, "id": id, "hash": hash, "repr": repr, "format": format, "chr": chr, "ord": ord, "bin": bin, "oct": oct, "hex": hex, "Exception": Exception, "ValueError": ValueError, "TypeError": TypeError, "KeyError": KeyError, "IndexError": IndexError, "ZeroDivisionError": ZeroDivisionError, "datetime": datetime.datetime, "date": datetime.date, "time": datetime.time, "timedelta": datetime.timedelta, "datetime_now": datetime.datetime.now, "date_today": datetime.date.today, "datetime_fromisoformat": datetime.datetime.fromisoformat, "date_fromisoformat": datetime.date.fromisoformat, "datetime_strptime": datetime.datetime.strptime, "strftime": datetime.datetime.strftime, "isoformat": datetime.datetime.isoformat, "np": np, "array": np.array, "mean": np.mean, "median": np.median, "std": np.std, "sum_np": np.sum, "pd": pd, "to_datetime": pd.to_datetime, "DataFrame": pd.DataFrame, "Series": pd.Series, "dt_year": lambda s: s.dt.year, "dt_month": lambda s: s.dt.month, "dt_day": lambda s: s.dt.day, "dt_quarter": lambda s: s.dt.quarter, "dt_day_name": lambda s: s.dt.day_name(), "dt_month_name": lambda s: s.dt.month_name(), "dt_weekday": lambda s: s.dt.weekday, "dt_is_leap_year": lambda s: s.dt.is_leap_year}
 
     # Bind a copy of the dataframe (df) to the environment
     exec_globals = {
