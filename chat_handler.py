@@ -219,8 +219,7 @@ def execute_safe_code(code_block, selected_df_chat):
     st.info("✅ Code passed safety checks. Executing in a restricted environment...")
 
     # Prepare restricted environment
-   # safe_builtins = {
-        "len": len, "range": range, "min": min, "max": max, "sum": sum, "abs": abs, "round": round, "sorted": sorted, "str": str, "int": int, "float": float, "dict": dict, "list": list }
+   # safe_builtins = {"len": len, "range": range, "min": min, "max": max, "sum": sum, "abs": abs, "round": round, "sorted": sorted, "str": str, "int": int, "float": float, "dict": dict, "list": list }
 
 
 
