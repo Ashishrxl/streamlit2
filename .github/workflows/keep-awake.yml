@@ -2,17 +2,18 @@ name: Keep Streamlit App Awake
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
-  workflow_dispatch:
+    - cron: "*/30 * * * *"  # runs every 30 minutes
+  workflow_dispatch:        # manual trigger option
 
 jobs:
-  wake:
+  keep_awake:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -22,32 +23,50 @@ jobs:
           npm install playwright
           npx playwright install chromium
 
-      - name: Wake up Streamlit app
+      - name: Run Streamlit keep-awake script
         run: |
           cat > wakeup.js <<'EOF'
           const { chromium } = require('playwright');
 
           (async () => {
+            const url = 'https://csvvisualisation.streamlit.app';
+            console.log(`🌐 Checking ${url}...`);
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage();
-            const url = 'https://csvvisualisation.streamlit.app';
-            console.log(`Opening ${url}`);
-            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-            // Check for the "wake up" button
-            const button = await page.$('text="Yes, get this app back up!"');
-            if (button) {
-              console.log('App is asleep. Clicking wake-up button...');
-              await button.click();
-              await page.waitForTimeout(10000);
-            } else {
-              console.log('App appears to be awake already.');
+            try {
+              await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+              // Detect if the app is asleep
+              const sleeping = await page.$('text="Yes, get this app back up!"');
+
+              if (sleeping) {
+                console.log('😴 App appears to be asleep. Clicking wake-up button...');
+                await sleeping.click();
+                await page.waitForTimeout(15000); // wait 15s for it to spin up
+              } else {
+                console.log('✅ App is already awake and responding.');
+              }
+
+              // Double-check final page title and HTTP status
+              await page.waitForLoadState('networkidle', { timeout: 30000 });
+              const title = await page.title();
+              console.log(`📄 Final page title: ${title}`);
+
+              const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+              const status = response?.status() || 'unknown';
+              console.log(`🔍 Final HTTP status: ${status}`);
+
+              if (status === 200) {
+                console.log('🚀 App is confirmed awake!');
+              } else {
+                console.warn('⚠️ App may still be waking up.');
+              }
+            } catch (error) {
+              console.error('❌ Error while checking or waking app:', error.message);
+            } finally {
+              await browser.close();
             }
-
-            console.log('Final check...');
-            await page.waitForTimeout(5000);
-            console.log(await page.title());
-            await browser.close();
           })();
           EOF
 
