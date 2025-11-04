@@ -55,7 +55,6 @@ Utility functions for:
 
 Handles data processing tasks:
 
-- Processing alldata.csv structure into normalized tables
 - Regular CSV file processing
 - Data aggregation by time periods
 - Table preview and download functionality
@@ -92,7 +91,6 @@ AI-powered chat functionality:
 User interface components:
 
 - File upload handling
-- Settings sidebar
 - Column renaming interface
 - Welcome messages and instructions
 
