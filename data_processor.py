@@ -110,18 +110,41 @@ def aggregate_data_by_time(selected_df, date_col_sel, time_period, grouping_choi
     try:
         selected_df[date_col_sel] = pd.to_datetime(selected_df[date_col_sel], errors="coerce")
         selected_df = selected_df.sort_values(by=date_col_sel).reset_index(drop=True)
+
+        # Existing time columns
         selected_df['Year_Month'] = selected_df[date_col_sel].dt.to_period('M')
         selected_df['Year'] = selected_df[date_col_sel].dt.to_period('Y')
-        
-        period_col = 'Year_Month' if time_period == "Monthly" else 'Year'
-        
+
+        # 🔹 ADD: Financial Year column
+        fy_start = (
+            selected_df[date_col_sel].dt.year
+            - (selected_df[date_col_sel].dt.month < 4)
+        )
+        selected_df['Financial_Year'] = (
+            fy_start.astype(str) + '-' + (fy_start + 1).astype(str)
+        )
+
+        # 🔹 Select period column based on time_period
+        if time_period == "Monthly":
+            period_col = 'Year_Month'
+        elif time_period == "Yearly":
+            period_col = 'Year'
+        elif time_period == "Financial Year":
+            period_col = 'Financial_Year'
+        else:
+            raise ValueError(f"Unsupported time_period: {time_period}")
+
         if grouping_choice == "Group by Name" and name_col_sel:
-            grouped_df = selected_df.groupby([period_col, name_col_sel], as_index=False)[numerical_cols].sum()
+            grouped_df = (
+                selected_df
+                .groupby([period_col, name_col_sel], as_index=False)[numerical_cols]
+                .sum()
+            )
             grouped_df[period_col] = grouped_df[period_col].astype(str)
             selected_df = grouped_df.copy()
             date_col_sel = period_col
             st.success(f"✅ Data aggregated {time_period.lower()} and grouped by {name_col_sel} with numerical values summed.")
-            
+
         elif grouping_choice == "Group by Custom Columns":
             st.markdown(f"#### Select Columns for {time_period} Grouping")
             selected_group_cols = st.multiselect(
@@ -130,30 +153,42 @@ def aggregate_data_by_time(selected_df, date_col_sel, time_period, grouping_choi
                 default=[],
                 help=f"Select one or more columns to group your data by within each {time_period.lower()} period. Numerical columns will be summed."
             )
-            
+
             if selected_group_cols:
                 group_by_cols = [period_col] + selected_group_cols
-                grouped_df = selected_df.groupby(group_by_cols, as_index=False)[numerical_cols].sum()
+                grouped_df = (
+                    selected_df
+                    .groupby(group_by_cols, as_index=False)[numerical_cols]
+                    .sum()
+                )
                 grouped_df[period_col] = grouped_df[period_col].astype(str)
                 selected_df = grouped_df.copy()
                 date_col_sel = period_col
                 st.success(f"✅ Data aggregated {time_period.lower()} and grouped by {', '.join(selected_group_cols)} with numerical values summed.")
             else:
-                grouped_df = selected_df.groupby(period_col, as_index=False)[numerical_cols].sum()
+                grouped_df = (
+                    selected_df
+                    .groupby(period_col, as_index=False)[numerical_cols]
+                    .sum()
+                )
                 grouped_df[period_col] = grouped_df[period_col].astype(str)
                 selected_df = grouped_df.copy()
                 date_col_sel = period_col
                 st.info(f"ℹ️ No grouping columns selected. Data aggregated {time_period.lower()} only.")
-                
+
         elif grouping_choice == "No Grouping":
-            grouped_df = selected_df.groupby(period_col, as_index=False)[numerical_cols].sum()
+            grouped_df = (
+                selected_df
+                .groupby(period_col, as_index=False)[numerical_cols]
+                .sum()
+            )
             grouped_df[period_col] = grouped_df[period_col].astype(str)
             selected_df = grouped_df.copy()
             date_col_sel = period_col
             st.success(f"✅ Data aggregated {time_period.lower()} only. All numerical values summed per {time_period.lower()} period.")
-            
+
         return selected_df, date_col_sel
-        
+
     except Exception as e:
         st.warning(f"⚠️ Could not process date grouping: {e}")
         st.error(f"Error details: {str(e)}")
