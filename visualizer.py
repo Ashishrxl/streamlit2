@@ -34,7 +34,6 @@ def create_visualization_section(tables_dict):
         # Column selection and visualization
         create_interactive_visualization(selected_df)
 
-
 def process_data_for_visualization(selected_df):
     """Process and aggregate data for visualization."""
     date_col_sel = find_col_ci(selected_df, "date") or find_col_ci(selected_df, "Date")
@@ -45,16 +44,30 @@ def process_data_for_visualization(selected_df):
         try:
             selected_df[date_col_sel] = pd.to_datetime(selected_df[date_col_sel], errors="coerce")
             selected_df = selected_df.sort_values(by=date_col_sel).reset_index(drop=True)
+
+            # Existing time columns
             selected_df['Year_Month'] = selected_df[date_col_sel].dt.to_period('M')
             selected_df['Year'] = selected_df[date_col_sel].dt.to_period('Y')
 
+            # 🔹 ADD: Financial Year column
+            fy_start = (
+                selected_df[date_col_sel].dt.year
+                - (selected_df[date_col_sel].dt.month < 4)
+            )
+            selected_df['Financial_Year'] = (
+                fy_start.astype(str) + '-' + (fy_start + 1).astype(str)
+            )
+
             numerical_cols = selected_df.select_dtypes(include=[np.number]).columns.tolist()
-            categorical_cols = [c for c in selected_df.columns if c not in numerical_cols + ['Year_Month', 'Year', date_col_sel]]
+            categorical_cols = [
+                c for c in selected_df.columns
+                if c not in numerical_cols + ['Year_Month', 'Year', 'Financial_Year', date_col_sel]
+            ]
 
             st.markdown("### 📅 Data Aggregation Options")
             time_period = st.selectbox(
                 "Choose time aggregation period:",
-                ["No Aggregation", "Monthly", "Yearly"],
+                ["No Aggregation", "Monthly", "Yearly", "Financial Year"],  # 🔹 added
                 help="Select how you want to aggregate your data over time"
             )
 
@@ -73,8 +86,13 @@ def process_data_for_visualization(selected_df):
 
                 from data_processor import aggregate_data_by_time
                 selected_df, date_col_sel = aggregate_data_by_time(
-                    selected_df, date_col_sel, time_period, grouping_choice, 
-                    name_col_sel, categorical_cols, numerical_cols
+                    selected_df,
+                    date_col_sel,
+                    time_period,
+                    grouping_choice,
+                    name_col_sel,
+                    categorical_cols,
+                    numerical_cols
                 )
             else:
                 st.info("ℹ️ Using original data without time aggregation.")
@@ -84,7 +102,6 @@ def process_data_for_visualization(selected_df):
             st.error(f"Error details: {str(e)}")
 
     return selected_df, date_col_sel
-
 
 def display_processed_table(selected_df, selected_table_name):
     """Display processed table with expand/collapse functionality."""
