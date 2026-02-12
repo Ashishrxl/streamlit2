@@ -1,6 +1,6 @@
 """
 Chat with CSV using Gemini AI
-Enterprise Safe + Optimized Prompt Version
+Streamlit Safe + Secure Sandbox + Smart Prompt
 """
 
 import datetime
@@ -13,24 +13,9 @@ import seaborn as sns
 import re
 import ast
 import plotly.graph_objs as go
-import signal
 
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from utils import convert_df_to_csv
-
-
-# ============================================================
-# TIMEOUT PROTECTION
-# ============================================================
-
-class TimeoutException(Exception):
-    pass
-
-
-def timeout_handler(signum, frame):
-    raise TimeoutException("Execution timed out")
-
-
-signal.signal(signal.SIGALRM, timeout_handler)
 
 
 # ============================================================
@@ -91,7 +76,7 @@ USER QUESTION
 {user_prompt}
 
 ------------------------------------------------
-STRICT RULES (MUST FOLLOW)
+STRICT RULES
 ------------------------------------------------
 
 1. Output ONLY Python code inside ONE fenced block.
@@ -103,13 +88,13 @@ STRICT RULES (MUST FOLLOW)
 7. Avoid loops unless absolutely required.
 8. Keep code under 40 lines.
 9. Handle missing values safely.
-10. Do NOT modify df in-place unless necessary.
+10. Do NOT modify df in-place unless required.
 
 ------------------------------------------------
 OUTPUT REQUIREMENTS
 ------------------------------------------------
 
-Store final output in ONE variable:
+Store final output in ONE of:
 
 result
 df_out
@@ -120,17 +105,10 @@ output
 VISUALIZATION RULES
 ------------------------------------------------
 
-If chart is needed:
-- Use Plotly Express (px)
-- Assign to variable `fig`
-- Add title and axis labels
-
-------------------------------------------------
-FAILSAFE
-------------------------------------------------
-
-If request unclear:
-Return dataframe column summary.
+If chart is useful:
+- Use Plotly Express
+- Assign chart to variable `fig`
+- Add labels + title
 """
 
 
@@ -144,18 +122,15 @@ def create_chat_section(tables_dict, gemini_model):
 
     with st.expander("🤖 Chat with your CSV"):
 
-        available_tables_chat = {k: v for k, v in tables_dict.items() if not v.empty}
+        available_tables = {k: v for k, v in tables_dict.items() if not v.empty}
 
-        if not available_tables_chat:
+        if not available_tables:
             st.warning("No usable tables found.")
             return
 
-        selected_name = st.selectbox(
-            "Select table",
-            list(available_tables_chat.keys())
-        )
+        selected_name = st.selectbox("Select table", list(available_tables.keys()))
 
-        df = available_tables_chat[selected_name].copy()
+        df = available_tables[selected_name].copy()
 
         st.write(f"Preview: {selected_name}")
         st.dataframe(df.head(10))
@@ -165,7 +140,7 @@ def create_chat_section(tables_dict, gemini_model):
 
 
 # ============================================================
-# CHAT INTERFACE
+# CHAT
 # ============================================================
 
 def initialize_chat_history():
@@ -182,7 +157,7 @@ def display_chat_interface(df, gemini_model):
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    if prompt := st.chat_input("Ask about data"):
+    if prompt := st.chat_input("Ask about your data"):
 
         st.session_state.chat_messages.append({"role": "user", "content": prompt})
 
@@ -193,7 +168,7 @@ def display_chat_interface(df, gemini_model):
 
 
 # ============================================================
-# PROCESS QUERY
+# QUERY PROCESSING
 # ============================================================
 
 def process_user_query(prompt, df, gemini_model):
@@ -201,7 +176,7 @@ def process_user_query(prompt, df, gemini_model):
     full_prompt = build_gemini_prompt(prompt, df)
 
     with st.chat_message("assistant"):
-        with st.spinner("Generating analysis..."):
+        with st.spinner("Analyzing..."):
 
             try:
                 response = gemini_model.generate_content(full_prompt)
@@ -288,7 +263,7 @@ def is_code_safe(code_block):
 
 
 # ============================================================
-# SAFE EXECUTION
+# SAFE EXECUTION (Thread Timeout Version)
 # ============================================================
 
 def execute_safe_code(code_block, df):
@@ -328,12 +303,14 @@ def execute_safe_code(code_block, df):
 
     safe_locals = {}
 
-    try:
-        signal.alarm(5)
-
+    def run_code():
         exec(compile(code_block, "", "exec"), safe_globals, safe_locals)
 
-        signal.alarm(0)
+    try:
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(run_code)
+            future.result(timeout=5)
 
         output_obj = None
         output_name = None
@@ -354,14 +331,11 @@ def execute_safe_code(code_block, df):
 
         display_execution_result(output_obj, output_name)
 
-    except TimeoutException:
+    except TimeoutError:
         st.error("Execution stopped due to timeout")
 
     except Exception as e:
         st.error(f"Execution error: {e}")
-
-    finally:
-        signal.alarm(0)
 
 
 # ============================================================
