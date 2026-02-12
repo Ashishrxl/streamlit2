@@ -18,17 +18,11 @@ from utils import convert_df_to_csv
 # ENTERPRISE SECURITY CONFIG
 # =====================================================
 
-ALLOWED_IMPORTS = {
-    "pandas",
-    "numpy",
-    "plotly",
-    "matplotlib",
-    "seaborn"
-}
+ALLOWED_IMPORTS = {"pandas", "numpy", "plotly", "matplotlib", "seaborn"}
 
 
 def safe_import(name, globals=None, locals=None, fromlist=(), level=0):
-    if not any(name.startswith(mod) for mod in ALLOWED_IMPORTS):
+    if not any(name.startswith(m) for m in ALLOWED_IMPORTS):
         raise ImportError(f"Import blocked: {name}")
     return __import__(name, globals, locals, fromlist, level)
 
@@ -59,65 +53,7 @@ EXECUTION_TIMEOUT = 8
 
 
 # =====================================================
-# CHAT UI
-# =====================================================
-
-def create_chat_section(tables_dict, gemini_model):
-
-    st.markdown("---")
-    with st.expander("🤖 Chat with your CSV", expanded=False):
-
-        available_tables = {k: v for k, v in tables_dict.items() if not v.empty}
-
-        if not available_tables:
-            st.warning("⚠️ No usable tables found")
-            return
-
-        table_name = st.selectbox(
-            "Select table",
-            list(available_tables.keys()),
-            key="chat_table_select"
-        )
-
-        df = available_tables[table_name].copy()
-
-        st.write(f"### Preview: {table_name}")
-        st.dataframe(df.head(10))
-
-        initialize_chat_history()
-        display_chat_interface(df, gemini_model)
-
-
-def initialize_chat_history():
-    if "chat_messages" not in st.session_state:
-        st.session_state.chat_messages = [
-            {
-                "role": "assistant",
-                "content": "Hello! Ask anything about your data."
-            }
-        ]
-
-
-def display_chat_interface(df, gemini_model):
-
-    for message in st.session_state.chat_messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    if prompt := st.chat_input("Ask about your data"):
-
-        st.session_state.chat_messages.append(
-            {"role": "user", "content": prompt}
-        )
-
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        process_user_query(prompt, df, gemini_model)
-
-
-# =====================================================
-# GEMINI PROMPT HARDENING
+# GEMINI PROMPT BUILDER
 # =====================================================
 
 def build_gemini_prompt(prompt, df):
@@ -126,44 +62,43 @@ def build_gemini_prompt(prompt, df):
 You are a professional Python data analyst.
 
 STRICT RULES:
-- Return ONLY Python code in one fenced block.
+- Return ONLY Python code inside one fenced block.
+- DO NOT include import statements.
+- pd, np, px, sns, plt already exist.
 - Use dataframe variable name `df`
-- No import statements
-- No OS, file, subprocess, or network usage
-- Final output must be stored in:
+- Output MUST be stored in:
   result OR df_out OR fig OR output
-- Plotly charts must be stored in fig
 
 Columns:
 {df.dtypes}
 
-Sample:
+Sample rows:
 {df.head(5).to_string()}
 
-User Request:
+User request:
 {prompt}
 """
 
 
 # =====================================================
-# USER QUERY PROCESSING
+# AUTO CODE CLEANER
 # =====================================================
 
-def process_user_query(prompt, df, gemini_model):
+def clean_generated_code(code):
 
-    full_prompt = build_gemini_prompt(prompt, df)
+    cleaned = []
 
-    with st.chat_message("assistant"):
-        with st.spinner("Generating analysis..."):
+    for line in code.split("\n"):
 
-            try:
-                response = gemini_model.generate_content(full_prompt)
-                response_text = response.text.strip()
+        if re.match(r"^\s*import\s+", line):
+            continue
 
-                extract_and_execute_code(response_text, df)
+        if re.match(r"^\s*from\s+.*\s+import\s+", line):
+            continue
 
-            except Exception as e:
-                st.error(f"Gemini error: {e}")
+        cleaned.append(line)
+
+    return "\n".join(cleaned)
 
 
 # =====================================================
@@ -173,12 +108,10 @@ def process_user_query(prompt, df, gemini_model):
 def extract_python_code(text):
 
     match = re.search(r"```python(.*?)```", text, re.DOTALL)
-
     if match:
         return match.group(1).strip()
 
     match = re.search(r"```(.*?)```", text, re.DOTALL)
-
     if match:
         return match.group(1).strip()
 
@@ -186,7 +119,7 @@ def extract_python_code(text):
 
 
 # =====================================================
-# AST SECURITY CHECK
+# AST SECURITY
 # =====================================================
 
 def is_code_safe(code):
@@ -197,18 +130,18 @@ def is_code_safe(code):
         for node in ast.walk(tree):
 
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                raise ValueError("Import statements are not allowed")
+                raise ValueError("Import statements not allowed")
 
             if isinstance(node, ast.Call):
 
                 if isinstance(node.func, ast.Name):
                     if node.func.id in {"exec", "eval", "compile", "open"}:
-                        raise ValueError(f"{node.func.id} not allowed")
+                        raise ValueError("Unsafe builtin blocked")
 
                 if isinstance(node.func, ast.Attribute):
                     if isinstance(node.func.value, ast.Name):
                         if node.func.value.id in {"os", "sys", "subprocess"}:
-                            raise ValueError("System calls blocked")
+                            raise ValueError("System access blocked")
 
     except Exception as e:
         st.error(str(e))
@@ -249,21 +182,37 @@ def execute_safe_code(code, df):
     thread.join(EXECUTION_TIMEOUT)
 
     if thread.is_alive():
-        st.error("Execution timed out")
-        return
+        return "timeout", None
 
-    status, payload = result_queue.get()
+    return result_queue.get()
 
-    if status == "error":
-        st.error(payload)
-        return
 
-    for key in ("result", "df_out", "fig", "output"):
-        if key in payload:
-            display_execution_result(payload[key])
-            return
+# =====================================================
+# AUTO REPAIR LAYER
+# =====================================================
 
-    st.warning("No output variable found")
+def attempt_auto_repair(code, error, df, gemini_model):
+
+    repair_prompt = f"""
+Fix the Python code below.
+
+Rules:
+- No imports
+- Keep same logic
+- Fix the error: {error}
+- Return ONLY corrected Python code
+
+Code:
+{code}
+"""
+
+    try:
+        response = gemini_model.generate_content(repair_prompt)
+        repaired_code = extract_python_code(response.text)
+        repaired_code = clean_generated_code(repaired_code)
+        return repaired_code
+    except:
+        return None
 
 
 # =====================================================
@@ -294,16 +243,93 @@ def display_execution_result(obj):
 
 
 # =====================================================
-# EXECUTION PIPELINE
+# FULL EXECUTION PIPELINE
 # =====================================================
 
-def extract_and_execute_code(response_text, df):
+def extract_and_execute_code(response_text, df, gemini_model):
 
     code = extract_python_code(response_text)
+    code = clean_generated_code(code)
 
     st.code(code, language="python")
 
     if not is_code_safe(code):
         return
 
-    execute_safe_code(code, df)
+    status, payload = execute_safe_code(code, df)
+
+    if status == "success":
+
+        for k in ("result", "df_out", "fig", "output"):
+            if k in payload:
+                display_execution_result(payload[k])
+                return
+
+        st.warning("Code ran but no output variable found")
+        return
+
+    if status == "timeout":
+        st.error("Execution timed out")
+        return
+
+    # -------- AUTO REPAIR --------
+
+    st.warning("Execution failed. Attempting auto repair...")
+
+    repaired_code = attempt_auto_repair(code, payload, df, gemini_model)
+
+    if repaired_code:
+
+        st.code(repaired_code, language="python")
+
+        status2, payload2 = execute_safe_code(repaired_code, df)
+
+        if status2 == "success":
+            for k in ("result", "df_out", "fig", "output"):
+                if k in payload2:
+                    display_execution_result(payload2[k])
+                    return
+
+    st.error("Auto repair failed")
+
+
+# =====================================================
+# CHAT UI
+# =====================================================
+
+def create_chat_section(tables_dict, gemini_model):
+
+    st.markdown("---")
+
+    with st.expander("🤖 Chat with your CSV"):
+
+        tables = {k: v for k, v in tables_dict.items() if not v.empty}
+
+        if not tables:
+            st.warning("No usable tables")
+            return
+
+        table_name = st.selectbox("Select table", list(tables.keys()))
+
+        df = tables[table_name].copy()
+
+        st.dataframe(df.head(10))
+
+        if "chat_messages" not in st.session_state:
+            st.session_state.chat_messages = [{"role": "assistant", "content": "Ask about your data"}]
+
+        for msg in st.session_state.chat_messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        if prompt := st.chat_input("Ask about your data"):
+
+            st.session_state.chat_messages.append({"role": "user", "content": prompt})
+
+            with st.chat_message("assistant"):
+
+                full_prompt = build_gemini_prompt(prompt, df)
+
+                response = gemini_model.generate_content(full_prompt)
+
+                extract_and_execute_code(response.text, df, gemini_model)
