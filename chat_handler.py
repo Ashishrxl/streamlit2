@@ -1,74 +1,37 @@
+import datetime
 import streamlit as st
 import pandas as pd
 import numpy as np
-import ast
-import builtins
-import plotly
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 import seaborn as sns
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import plotly.graph_objs as go
+import threading
+import queue
+import ast
+import re
 
-# =========================================================
-# CONFIG
-# =========================================================
+from utils import convert_df_to_csv
 
-EXECUTION_TIMEOUT = 5  # seconds
+
+# =====================================================
+# ENTERPRISE SECURITY CONFIG
+# =====================================================
 
 ALLOWED_IMPORTS = {
     "pandas",
     "numpy",
     "plotly",
-    "plotly.express",
-    "plotly.graph_objects",
-    "matplotlib.pyplot",
+    "matplotlib",
     "seaborn"
 }
 
-BLOCKED_NAMES = {
-    "open",
-    "exec",
-    "eval",
-    "compile",
-    "__import__",
-    "input",
-    "os",
-    "sys",
-    "subprocess",
-    "socket",
-    "requests",
-    "shutil",
-    "pathlib"
-}
 
-# =========================================================
-# AST SECURITY VALIDATOR
-# =========================================================
+def safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if not any(name.startswith(mod) for mod in ALLOWED_IMPORTS):
+        raise ImportError(f"Import blocked: {name}")
+    return __import__(name, globals, locals, fromlist, level)
 
-class SecurityVisitor(ast.NodeVisitor):
-
-    def visit_Import(self, node):
-        for alias in node.names:
-            if alias.name not in ALLOWED_IMPORTS:
-                raise ValueError(f"Blocked import: {alias.name}")
-
-    def visit_ImportFrom(self, node):
-        if node.module not in ALLOWED_IMPORTS:
-            raise ValueError(f"Blocked import from: {node.module}")
-
-    def visit_Name(self, node):
-        if node.id in BLOCKED_NAMES:
-            raise ValueError(f"Blocked usage: {node.id}")
-
-def validate_code(code):
-    tree = ast.parse(code)
-    SecurityVisitor().visit(tree)
-
-# =========================================================
-# SAFE BUILTINS
-# =========================================================
 
 SAFE_BUILTINS = {
     "len": len,
@@ -88,92 +51,259 @@ SAFE_BUILTINS = {
     "float": float,
     "int": int,
     "str": str,
-    "bool": bool
+    "bool": bool,
+    "__import__": safe_import
 }
 
-# =========================================================
-# OUTPUT DISPLAY
-# =========================================================
+EXECUTION_TIMEOUT = 8
 
-def display_execution_result(output, name):
 
-    if isinstance(output, pd.DataFrame):
-        st.dataframe(output)
+# =====================================================
+# CHAT UI
+# =====================================================
 
-    elif isinstance(output, plotly.graph_objs._figure.Figure):
-        st.plotly_chart(output, use_container_width=True)
+def create_chat_section(tables_dict, gemini_model):
 
-    elif isinstance(output, plt.Figure):
-        st.pyplot(output)
+    st.markdown("---")
+    with st.expander("🤖 Chat with your CSV", expanded=False):
 
-    else:
-        st.write(output)
+        available_tables = {k: v for k, v in tables_dict.items() if not v.empty}
 
-# =========================================================
-# EXECUTION SANDBOX
-# =========================================================
+        if not available_tables:
+            st.warning("⚠️ No usable tables found")
+            return
+
+        table_name = st.selectbox(
+            "Select table",
+            list(available_tables.keys()),
+            key="chat_table_select"
+        )
+
+        df = available_tables[table_name].copy()
+
+        st.write(f"### Preview: {table_name}")
+        st.dataframe(df.head(10))
+
+        initialize_chat_history()
+        display_chat_interface(df, gemini_model)
+
+
+def initialize_chat_history():
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = [
+            {
+                "role": "assistant",
+                "content": "Hello! Ask anything about your data."
+            }
+        ]
+
+
+def display_chat_interface(df, gemini_model):
+
+    for message in st.session_state.chat_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input("Ask about your data"):
+
+        st.session_state.chat_messages.append(
+            {"role": "user", "content": prompt}
+        )
+
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        process_user_query(prompt, df, gemini_model)
+
+
+# =====================================================
+# GEMINI PROMPT HARDENING
+# =====================================================
+
+def build_gemini_prompt(prompt, df):
+
+    return f"""
+You are a professional Python data analyst.
+
+STRICT RULES:
+- Return ONLY Python code in one fenced block.
+- Use dataframe variable name `df`
+- No import statements
+- No OS, file, subprocess, or network usage
+- Final output must be stored in:
+  result OR df_out OR fig OR output
+- Plotly charts must be stored in fig
+
+Columns:
+{df.dtypes}
+
+Sample:
+{df.head(5).to_string()}
+
+User Request:
+{prompt}
+"""
+
+
+# =====================================================
+# USER QUERY PROCESSING
+# =====================================================
+
+def process_user_query(prompt, df, gemini_model):
+
+    full_prompt = build_gemini_prompt(prompt, df)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Generating analysis..."):
+
+            try:
+                response = gemini_model.generate_content(full_prompt)
+                response_text = response.text.strip()
+
+                extract_and_execute_code(response_text, df)
+
+            except Exception as e:
+                st.error(f"Gemini error: {e}")
+
+
+# =====================================================
+# CODE EXTRACTION
+# =====================================================
+
+def extract_python_code(text):
+
+    match = re.search(r"```python(.*?)```", text, re.DOTALL)
+
+    if match:
+        return match.group(1).strip()
+
+    match = re.search(r"```(.*?)```", text, re.DOTALL)
+
+    if match:
+        return match.group(1).strip()
+
+    return text
+
+
+# =====================================================
+# AST SECURITY CHECK
+# =====================================================
+
+def is_code_safe(code):
+
+    try:
+        tree = ast.parse(code)
+
+        for node in ast.walk(tree):
+
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                raise ValueError("Import statements are not allowed")
+
+            if isinstance(node, ast.Call):
+
+                if isinstance(node.func, ast.Name):
+                    if node.func.id in {"exec", "eval", "compile", "open"}:
+                        raise ValueError(f"{node.func.id} not allowed")
+
+                if isinstance(node.func, ast.Attribute):
+                    if isinstance(node.func.value, ast.Name):
+                        if node.func.value.id in {"os", "sys", "subprocess"}:
+                            raise ValueError("System calls blocked")
+
+    except Exception as e:
+        st.error(str(e))
+        return False
+
+    return True
+
+
+# =====================================================
+# SANDBOX EXECUTION
+# =====================================================
 
 def execute_safe_code(code, df):
 
-    validate_code(code)
-
-    safe_globals = {
+    exec_globals = {
         "__builtins__": SAFE_BUILTINS,
         "pd": pd,
         "np": np,
         "px": px,
-        "go": go,
-        "plotly": plotly,
         "plt": plt,
         "sns": sns,
-        "make_subplots": make_subplots,
+        "go": go,
         "df": df.copy()
     }
 
-    safe_locals = {}
+    exec_locals = {}
+    result_queue = queue.Queue()
 
-    def run():
-        exec(compile(code, "", "exec"), safe_globals, safe_locals)
+    def runner():
+        try:
+            exec(code, exec_globals, exec_locals)
+            result_queue.put(("success", exec_locals))
+        except Exception as e:
+            result_queue.put(("error", str(e)))
 
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(run)
-            future.result(timeout=EXECUTION_TIMEOUT)
+    thread = threading.Thread(target=runner)
+    thread.start()
+    thread.join(EXECUTION_TIMEOUT)
 
-        # Search outputs
-        for name in ("result", "df_out", "fig", "output"):
-            if name in safe_locals:
-                display_execution_result(safe_locals[name], name)
-                return
-            if name in safe_globals:
-                display_execution_result(safe_globals[name], name)
-                return
+    if thread.is_alive():
+        st.error("Execution timed out")
+        return
 
-        st.warning("Code executed but no output variable found.")
+    status, payload = result_queue.get()
 
-    except TimeoutError:
-        st.error("Execution stopped (timeout).")
+    if status == "error":
+        st.error(payload)
+        return
 
-    except Exception as e:
-        st.error(f"Execution error: {e}")
+    for key in ("result", "df_out", "fig", "output"):
+        if key in payload:
+            display_execution_result(payload[key])
+            return
 
-# =========================================================
-# STREAMLIT UI
-# =========================================================
+    st.warning("No output variable found")
 
-st.title("🔐 Enterprise AI Code Sandbox")
 
-uploaded = st.file_uploader("Upload CSV", type=["csv"])
+# =====================================================
+# RESULT DISPLAY
+# =====================================================
 
-if uploaded:
-    df = pd.read_csv(uploaded)
-    st.success("Dataset Loaded")
-    st.dataframe(df.head())
+def display_execution_result(obj):
 
-    code = st.text_area(
-        "Paste AI Generated Python Code",
-        height=300
-    )
+    if isinstance(obj, pd.DataFrame):
 
-    if st.button("Run Code"):
-        execute_safe_code(code, df)
+        st.dataframe(obj)
+
+        st.download_button(
+            "Download CSV",
+            convert_df_to_csv(obj),
+            "result.csv",
+            "text/csv"
+        )
+
+    elif isinstance(obj, go.Figure):
+        st.plotly_chart(obj, use_container_width=True)
+
+    elif hasattr(obj, "savefig"):
+        st.pyplot(obj)
+
+    else:
+        st.write(obj)
+
+
+# =====================================================
+# EXECUTION PIPELINE
+# =====================================================
+
+def extract_and_execute_code(response_text, df):
+
+    code = extract_python_code(response_text)
+
+    st.code(code, language="python")
+
+    if not is_code_safe(code):
+        return
+
+    execute_safe_code(code, df)
