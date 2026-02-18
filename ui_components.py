@@ -70,8 +70,8 @@ def process_regular_file(uploaded_file):
 def process_file_with_header(uploaded_file):
     """Process CSV file that has headers."""
     try:
-        uploaded_df = pd.read_csv(uploaded_file)
-    st.dataframe(uploaded_df)
+        uploaded_df = pd.read_csv(uploaded_file low)
+        st.dataframe(uploaded_df, low_memory=False)
         st.success("✅ File loaded with header successfully!")
         st.info("Now, please confirm the column names for analysis.")
         
@@ -92,7 +92,7 @@ def process_file_with_header(uploaded_file):
 def process_file_without_header(uploaded_file):
     """Process CSV file that doesn't have headers."""
     try:
-        uploaded_df = pd.read_csv(uploaded_file, header=None)
+        uploaded_df = pd.read_csv(uploaded_file, header=None, low_memory=False)
         st.success("✅ File loaded without header successfully!")
         st.info("Please rename the generic columns to meaningful names.")
         
