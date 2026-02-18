@@ -73,7 +73,7 @@ def process_file_with_header(uploaded_file):
     try:
         uploaded_file.seek(0)
         uploaded_df = pd.read_csv(uploaded_file, low_memory=False)
-        st.dataframe(uploaded_df)
+        
         st.success("✅ File loaded with header successfully!")
         st.info("Now, please confirm the column names for analysis.")
         
