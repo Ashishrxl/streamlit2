@@ -69,6 +69,9 @@ def process_regular_file(uploaded_file):
 
 def process_file_with_header(uploaded_file):
     """Process CSV file that has headers."""
+    uploaded_df = pd.read_csv(uploaded_file, low_memory=False)
+    st.dataframe(uploaded_df)
+    st.success(" File loaded with header successfully!"
     try:
         uploaded_df = pd.read_csv(uploaded_file, low_memory=False)
         st.dataframe(uploaded_df)
