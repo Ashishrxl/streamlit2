@@ -56,6 +56,7 @@ def process_regular_file(uploaded_file):
     """Process regular CSV file with structure confirmation."""
     st.warning("⚠️ Please confirm its structure.")
     st.subheader("📋 Confirm File Structure")
+    st.dataframe(uploaded_file)
     
     header_option = st.radio("Does your CSV file have a header row?", ["Yes", "No"])
     
