@@ -62,14 +62,14 @@ def process_forecasting_data(selected_df_forecast, date_columns, numerical_cols,
         if aggregation_period != "No Aggregation":
             if aggregation_period == "Monthly":
                 forecast_df = forecast_df.groupby(pd.Grouper(key=selected_date_col, freq='M')).sum(numeric_only=True).reset_index()
-                freq_str = "M"
+                freq_str = "ME"
                 period_type = "months"
             else:
                 forecast_df = forecast_df.groupby(pd.Grouper(key=selected_date_col, freq='Y')).sum(numeric_only=True).reset_index()
                 freq_str = "Y"
                 period_type = "years"
         else:
-            freq_str = "M"
+            freq_str = "ME"
             period_type = "months"
 
         # Run forecasting
